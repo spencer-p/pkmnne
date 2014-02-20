@@ -1,2 +1,2 @@
-game: game.c 
-	cc game.c -o game -lncurses -g -Wall -Werror -pedantic
+pkmnne: main.c 
+	cc main.c -o pkmnne -lncurses -g -Wall -Werror -pedantic
