@@ -7,8 +7,9 @@
 #include <time.h>
 #include <stdbool.h>
 
-//change this to change where stuff gets saved
-#define SAVEFILE "save.game"
+//name for the savefile
+//is a char* instead of #define because i want to add options to change it
+char *SAVEFILE = "save.game";
 
 //Typdefs
 typedef struct {
