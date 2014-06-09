@@ -7,6 +7,8 @@
 #include <time.h>
 #include <stdbool.h>
 
+#include "monsters.h"
+
 //name for the savefile
 //is a char* instead of #define because i want to add options to change it
 char *SAVEFILE = "save.game";
@@ -18,14 +20,20 @@ typedef struct {
 } point;
 
 typedef struct {
-    char dat[16][16];
+    char dat[8][8];
     bool generated;
 } block;
 
 //variables shared by everything
-point playerblock;
-point playerpos;
-char name[32];
+struct {
+    point block;
+    point pos;
+    char name[32];
+    Monster *monsters[4];
+} player;
+//point playerblock;
+//point playerpos;
+//char name[32];
 block **map;
 point blocks; //not actually a point but a convienent way to store amt of blocks
 int seed;
@@ -84,45 +92,45 @@ int main() {
         switch (c) {
             case 'a': //move left
                 //decrement x
-                if (playerpos.x == 0 && playerblock.x != 0) {
-                    playerblock.x--;
-                    playerpos.x = 15;
+                if (player.pos.x == 0 && player.block.x != 0) {
+                    player.block.x--;
+                    player.pos.x = 15;
                 }
                 else {
-                    playerpos.x -= (playerpos.x == 0) ? 0 : 1;
+                    player.pos.x -= (player.pos.x == 0) ? 0 : 1;
                 }
                 break;
             case 's':
                 //move down
                 //increment y
-                if (playerpos.y == 15) {
-                    playerblock.y++;
-                    playerpos.y = 0;
+                if (player.pos.y == 15) {
+                    player.block.y++;
+                    player.pos.y = 0;
                 }
                 else {
-                    playerpos.y++;
+                    player.pos.y++;
                 }
                 break;
             case 'w':
                 //move up
                 //decrement y
-                if (playerpos.y == 0 && playerblock.y != 0) {
-                    playerblock.y--;
-                    playerpos.y = 15;
+                if (player.pos.y == 0 && player.block.y != 0) {
+                    player.block.y--;
+                    player.pos.y = 15;
                 }
                 else {
-                    playerpos.y -= (playerpos.y == 0) ? 0 : 1;
+                    player.pos.y -= (player.pos.y == 0) ? 0 : 1;
                 }
                 break;
             case 'd':
                 //move right
                 //increment x
-                if (playerpos.x == 15) {
-                    playerblock.x++;
-                    playerpos.x = 0;
+                if (player.pos.x == 15) {
+                    player.block.x++;
+                    player.pos.x = 0;
                 }
                 else {
-                    playerpos.x++;
+                    player.pos.x++;
                 }
                 break;
             case 'S':
@@ -137,10 +145,10 @@ int main() {
                 }
         }
 
-        if (playerblock.x >= blocks.x || 
-                playerblock.y >= blocks.y || 
-                map[playerblock.y][playerblock.x].generated == false) {
-            generateBlock(playerblock.y, playerblock.x);
+        if (player.block.x >= blocks.x || 
+                player.block.y >= blocks.y || 
+                map[player.block.y][player.block.x].generated == false) {
+            generateBlock(player.block.y, player.block.x);
         }
         
 
@@ -178,6 +186,7 @@ void generateBlock(int by, int bx) {
 
     fprintf(logFile, "generating block %d %d\n", by, bx);
 
+    //begin block allocation
     if (by >= blocks.y) {
         map = realloc(map, (by+1)*sizeof(block *));
         map[by] = malloc(blocks.x*sizeof(block));
@@ -195,9 +204,10 @@ void generateBlock(int by, int bx) {
         }
         blocks.x = bx+1;
     }
+    //end block allocation
 
-    for (int y = 0; y < 16; y++) {
-        for (int x = 0; x < 16; x++) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
             int n = rand()%3;
             if (n == 1) {
                 map[by][bx].dat[y][x] = 'w';
@@ -215,7 +225,7 @@ void generateBlock(int by, int bx) {
 void drawMap() {
     
     point min, max, center;
-    center = getPos(playerblock.y, playerblock.x); //for reference
+    center = getPos(player.block.y, player.block.x); //for reference
     //This math for which block to use works because
     //it does division over the integers
     //why? so we don't have a ton of conditionals to see if the
@@ -224,13 +234,13 @@ void drawMap() {
     //if conditions to check we're not printing too far
     //
     //i hope you never need to work on this
-    min.x = playerblock.x-(center.x/16)-1;
+    min.x = player.block.x-(center.x/16)-1;
     if (min.x < 0) min.x = 0;
-    min.y = playerblock.y-(center.y/16)-1;
+    min.y = player.block.y-(center.y/16)-1;
     if (min.y < 0) min.y = 0;
-    max.x = playerblock.x+((MAXX-center.x)/16)+1;
+    max.x = player.block.x+((MAXX-center.x)/16)+1;
     if (max.x >= blocks.x) max.x = blocks.x;
-    max.y = playerblock.y+((MAXY-center.y)/16)+1;
+    max.y = player.block.y+((MAXY-center.y)/16)+1;
     if (max.y >= blocks.y) max.y = blocks.y;
     
     for (int y = min.y; y < max.y; y++) {
@@ -248,17 +258,17 @@ void drawMap() {
 point getPos(int y, int x) {
     point result;
     //centerpixel - distance from center - offset from player coords
-    if (x != playerblock.x) {
-        result.x = (MAXX/2)-(16*(playerblock.x-x))-playerpos.x;
+    if (x != player.block.x) {
+        result.x = (MAXX/2)-(16*(player.block.x-x))-player.pos.x;
     }
     else {
-        result.x = (MAXX/2)-playerpos.x;
+        result.x = (MAXX/2)-player.pos.x;
     }
-    if (y != playerblock.y) {
-        result.y = (MAXY/2)-(16*(playerblock.y-y))-playerpos.y;
+    if (y != player.block.y) {
+        result.y = (MAXY/2)-(16*(player.block.y-y))-player.pos.y;
     }
     else {
-        result.y = (MAXY/2)-playerpos.y;
+        result.y = (MAXY/2)-player.pos.y;
     }
 
     return result;
@@ -267,7 +277,7 @@ point getPos(int y, int x) {
 void drawPlayer() {
     //wow interesting stuff
     //player is always in the same place
-    mvaddch(MAXY/2, MAXX/2, toupper(name[0]) | COLOR_PAIR(4) | A_BOLD);
+    mvaddch(MAXY/2, MAXX/2, toupper(player.name[0]) | COLOR_PAIR(4) | A_BOLD);
     return;
 }
 
@@ -280,11 +290,11 @@ void drawBlock(int by, int bx, int y, int x) {
     min.y = (y < 0) ? abs(y) : 0;
     max.x = (x+16 >= MAXX) ? 16-((x+16)-MAXX) : 16;
     max.y = (y+16 >= MAXY) ? 16-((y+16)-MAXY) : 16;
-    for (int yi = min.y; yi < max.y; yi++) {
+    for (int yi = min.y; yi < max.y; yi += 2) {
         move(y+yi, x+min.x);
-        for (int xi = min.x; xi < max.x; xi++) {
+        for (int xi = min.x; xi < max.x; xi += 2) {
                 int color = 7;
-                switch(map[by][bx].dat[yi][xi]) {
+                switch(map[by][bx].dat[yi/2][xi/2]) {
                     case 'w':
                         color = 2; //green
                         break;
@@ -292,7 +302,12 @@ void drawBlock(int by, int bx, int y, int x) {
                         color = 3; //yellow
                         break;
                 }
-                addch(map[by][bx].dat[yi][xi] | COLOR_PAIR(color));
+                for (int yii = 0; yii < 2; yii++) {
+                    move (y+yi+yii, x+xi+min.x);
+                    for (int xii = 0; xii < 2; xii++) {
+                        addch(map[by][bx].dat[yi/2][xi/2] | COLOR_PAIR(color));
+                    }
+                }
         }
     }
     return;
@@ -306,9 +321,9 @@ int writeSave() {
         //bad bad bad bad
         return 1;
     }
-    fprintf(output, "playername %s\n", name);
-    fprintf(output, "playerblock %d, %d\n", playerblock.y, playerblock.x);
-    fprintf(output, "playerpos %d, %d\n", playerpos.y, playerpos.x);
+    fprintf(output, "playername %s\n", player.name);
+    fprintf(output, "playerblock %d, %d\n", player.block.y, player.block.x);
+    fprintf(output, "playerpos %d, %d\n", player.pos.y, player.pos.x);
     fprintf(output, "seed %d\n", seed);
     fprintf(output, "blocks %d, %d\n", blocks.y, blocks.x);
     //dear god the quadruple for loop
@@ -316,13 +331,18 @@ int writeSave() {
         for (int x = 0; x < blocks.x; x++) {
             if (map[y][x].generated == true) {
                 fprintf(output, "block [%d %d] ", y, x);
-                for (int by = 0; by < 16; by++) {
-                    for (int bx = 0; bx < 16; bx++) {
+                for (int by = 0; by < 8; by++) {
+                    for (int bx = 0; bx < 8; bx++) {
                         fprintf(output, "%c", map[y][x].dat[by][bx]);
                     }
                 }
                 fprintf(output, "\n");
             }
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        if (player.monsters[i] != NULL) {
+            mPrint(player.monsters[i], output);
         }
     }
 
@@ -335,15 +355,18 @@ int readSave() {
     
     //default values
     map = NULL;
-    playerblock.x = 0;
-    playerblock.y = 0;
-    playerpos.x = 0;
-    playerpos.y = 0;
+    player.block.x = 0;
+    player.block.y = 0;
+    player.pos.x = 0;
+    player.pos.y = 0;
     seed = 0;
     blocks.x = 0;
     blocks.y = 0;
-    name[0] = 'P'; //for player
-    name[1] = '\0';
+    player.name[0] = 'P'; //for player
+    player.name[1] = '\0';
+    for (int i = 0; i < 4; i++) {
+        player.monsters[i] = NULL;
+    }
 
     //open up our input file
     //might want to change later
@@ -360,7 +383,7 @@ int readSave() {
         while (fscanf(input, "%s", buf) != EOF) {
             if (strncmp(buf, "playername", 10) == 0) {
                 fprintf(logFile, "reading name\n");
-                fscanf(input, "%s\n", name);
+                fscanf(input, "%s\n", player.name);
             }
             else if (strncmp(buf, "seed", 4) == 0) {
                 fprintf(logFile, "reading seed\n");
@@ -397,8 +420,8 @@ int readSave() {
                 //simple 2d array writing
                 //storing everything as a numbers
                 //don't know why. security through obscurity i guess
-                for (int yi = 0; yi < 16; yi++) {
-                    for (int xi = 0; xi < 16; xi++) {
+                for (int yi = 0; yi < 8; yi++) {
+                    for (int xi = 0; xi < 8; xi++) {
                         fscanf(input, "%c", &map[y][x].dat[yi][xi]);
                     }
                 }
@@ -406,12 +429,21 @@ int readSave() {
             else if (strncmp(buf, "playerblock", 11) == 0) {
                 fprintf(logFile, "reading player's block\n");
                 //read the numbers for which block the player is in
-                fscanf(input, " %d, %d", &playerblock.y, &playerblock.x);
+                fscanf(input, " %d, %d", &player.block.y, &player.block.x);
             }
             else if (strncmp(buf, "playerpos", 9) == 0) {
                 fprintf(logFile, "reading player's position\n");
                 //read the numbers for where the player is in the block
-                fscanf(input, " %d, %d", &playerpos.y, &playerpos.x);
+                fscanf(input, " %d, %d", &player.pos.y, &player.pos.x);
+            }
+            else if (strncmp(buf, "Monster", 7) == 0) {
+                fprintf(logFile, "reading a monster\n");
+                for (int i = 0; i < 4; i++) {
+                    if (player.monsters[i] == NULL) {
+                        player.monsters[i] = mScan(input);
+                        break;
+                    }
+                }
             }
         }
         fclose(input);
