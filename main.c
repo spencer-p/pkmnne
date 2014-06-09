@@ -285,13 +285,43 @@ void drawBlock(int by, int bx, int y, int x) {
     if (map[by][bx].generated == false) {
         return;
     }
-    point min, max;
+    for (int yi = 0; yi < 16; yi += 2) { // 16x16 sections, 2x2 chunks of each section
+        for (int xi = 0; xi < 16; xi += 2) {
+            for (int yii = 0; yii < 2; yii++) { //2x2
+                for (int xii = 0; xii < 2; xii++) {
+                    point pos;
+                    pos.x = x+xi+xii; // Simply calculates the cursor position and checks if on screen
+                    pos.y = y+yi+yii;
+                    if (pos.x >= 0 && pos.x < MAXX && pos.y >= 0 && pos.y < MAXY) {
+                        
+                        int tile = map[by][bx].dat[yi/2][xi/2];
+                        int color = 7;
+                        switch(map[by][bx].dat[yi/2][xi/2]) {
+                            case 'w':
+                                color = 2; //green
+                                if (rand()%9 == 0) {
+                                    tile = 'm';
+                                }
+                                break;
+                            case '=':
+                                color = 3; //yellow
+                                break;
+                        }
+
+                        move(y+yi+yii, x+xi+xii);
+                        addch(tile | COLOR_PAIR(color));
+                    }
+                }
+            }
+        }
+    }
+    /*point min, max;
     min.x = (x < 0) ? abs(x) : 0;
     min.y = (y < 0) ? abs(y) : 0;
-    max.x = (x+16 >= MAXX) ? 16-((x+16)-MAXX) : 16;
+    max.x = (x+16 >= MAXX) ? 16-((x+16)-MAXX) : 16; //i don't know what these lines do
     max.y = (y+16 >= MAXY) ? 16-((y+16)-MAXY) : 16;
-    for (int yi = min.y; yi < max.y; yi += 2) {
-        move(y+yi, x+min.x);
+    for (int yi = min.y; yi < max.y; yi += 2) { //inc y by 2 because we draw 2x2 for every char in the map
+        move(y+yi, x+min.x); 
         for (int xi = min.x; xi < max.x; xi += 2) {
                 int color = 7;
                 switch(map[by][bx].dat[yi/2][xi/2]) {
@@ -309,7 +339,7 @@ void drawBlock(int by, int bx, int y, int x) {
                     }
                 }
         }
-    }
+    }*/
     return;
 }
 
