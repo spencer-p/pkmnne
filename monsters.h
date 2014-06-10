@@ -1,4 +1,5 @@
 //functions and data types for the underlying monsters
+#include <stdio.h> //for FILE data type
 
 typedef struct {
     char *name;
@@ -18,6 +19,10 @@ typedef struct {
 } Monster;
 
 Monster *newMonster(int id);
+
+//Printing function for saving
+void mPrint(Monster *self, FILE *output);
+Monster *mScan(FILE *input);
 
 //Mutators
 void mHeal(Monster *self, int amount);
