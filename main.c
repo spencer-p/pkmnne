@@ -40,9 +40,6 @@ int seed;
 
 FILE *logFile;
 
-//ncurses technicalities 
-int MAXX, MAXY;
-
 //Prototypes
 int readSave();
 int writeSave();
@@ -66,7 +63,6 @@ int main() {
     initscr();
     raw();
     noecho();
-    getmaxyx(stdscr, MAXY, MAXX);
     curs_set(0);
 
     //colors
@@ -204,15 +200,14 @@ void generateBlock(int by, int bx) {
         }
         blocks.x = bx+1;
     }
+    for (int y = 0; y < 8; y++) {
+        memset(map[by][bx].dat[y], '\0', 8*sizeof(char));
+    }
     //end block allocation
 
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
-            int n = rand()%3;
-            if (n == 1) {
-                map[by][bx].dat[y][x] = 'w';
-            }
-            else {
+            if (map[by][bx].dat[y][x] == '\0') {
                 map[by][bx].dat[y][x] = '.';
             }
         }
@@ -238,9 +233,9 @@ void drawMap() {
     if (min.x < 0) min.x = 0;
     min.y = player.block.y-(center.y/16)-1;
     if (min.y < 0) min.y = 0;
-    max.x = player.block.x+((MAXX-center.x)/16)+1;
+    max.x = player.block.x+((COLS-center.x)/16)+1;
     if (max.x >= blocks.x) max.x = blocks.x;
-    max.y = player.block.y+((MAXY-center.y)/16)+1;
+    max.y = player.block.y+((LINES-center.y)/16)+1;
     if (max.y >= blocks.y) max.y = blocks.y;
     
     for (int y = min.y; y < max.y; y++) {
@@ -259,16 +254,16 @@ point getPos(int y, int x) {
     point result;
     //centerpixel - distance from center - offset from player coords
     if (x != player.block.x) {
-        result.x = (MAXX/2)-(16*(player.block.x-x))-player.pos.x;
+        result.x = (COLS/2)-(16*(player.block.x-x))-player.pos.x;
     }
     else {
-        result.x = (MAXX/2)-player.pos.x;
+        result.x = (COLS/2)-player.pos.x;
     }
     if (y != player.block.y) {
-        result.y = (MAXY/2)-(16*(player.block.y-y))-player.pos.y;
+        result.y = (LINES/2)-(16*(player.block.y-y))-player.pos.y;
     }
     else {
-        result.y = (MAXY/2)-player.pos.y;
+        result.y = (LINES/2)-player.pos.y;
     }
 
     return result;
@@ -277,7 +272,7 @@ point getPos(int y, int x) {
 void drawPlayer() {
     //wow interesting stuff
     //player is always in the same place
-    mvaddch(MAXY/2, MAXX/2, toupper(player.name[0]) | COLOR_PAIR(4) | A_BOLD);
+    mvaddch(LINES/2, COLS/2, toupper(player.name[0]) | COLOR_PAIR(4) | A_BOLD);
     return;
 }
 
@@ -292,11 +287,11 @@ void drawBlock(int by, int bx, int y, int x) {
                     point pos;
                     pos.x = x+xi+xii; // Simply calculates the cursor position and checks if on screen
                     pos.y = y+yi+yii;
-                    if (pos.x >= 0 && pos.x < MAXX && pos.y >= 0 && pos.y < MAXY) {
+                    if (pos.x >= 0 && pos.x < COLS && pos.y >= 0 && pos.y < LINES) {
                         
-                        int tile = map[by][bx].dat[yi/2][xi/2];
+                        int tile = map[by][bx].dat[yi/2][xi/2]; //so we can randomize for more depth
                         int color = 7;
-                        switch(map[by][bx].dat[yi/2][xi/2]) {
+                        switch(map[by][bx].dat[yi/2][xi/2]) { //switch case for deciding colors
                             case 'w':
                                 color = 2; //green
                                 if (rand()%9 == 0) {
@@ -318,8 +313,8 @@ void drawBlock(int by, int bx, int y, int x) {
     /*point min, max;
     min.x = (x < 0) ? abs(x) : 0;
     min.y = (y < 0) ? abs(y) : 0;
-    max.x = (x+16 >= MAXX) ? 16-((x+16)-MAXX) : 16; //i don't know what these lines do
-    max.y = (y+16 >= MAXY) ? 16-((y+16)-MAXY) : 16;
+    max.x = (x+16 >= COLS) ? 16-((x+16)-COLS) : 16; //i don't know what these lines do
+    max.y = (y+16 >= LINES) ? 16-((y+16)-LINES) : 16;
     for (int yi = min.y; yi < max.y; yi += 2) { //inc y by 2 because we draw 2x2 for every char in the map
         move(y+yi, x+min.x); 
         for (int xi = min.x; xi < max.x; xi += 2) {
