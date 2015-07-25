@@ -38,6 +38,8 @@ block **map;
 point blocks; //not actually a point but a convienent way to store amt of blocks
 int seed;
 
+block nullblock; //for simplicity
+
 FILE *logFile;
 
 //Prototypes
@@ -48,6 +50,7 @@ void drawBlock(int by, int bx, int y, int x);
 point getPos(int y, int x);
 void generateBlock(int by, int bx);
 void drawPlayer();
+block *getBlock(int y, int x); //lol stupid wrapper function to avoid segfaults
 
 int main() {
 
@@ -57,6 +60,11 @@ int main() {
     if (readSave() == 1) {
         printf("Error reading saved data.\n");
         return 1;
+    }
+    //init the "nullblock"
+    nullblock.generated = false;
+    for (int i = 0; i < 8; i++) {
+        memset(nullblock.dat[i], '\0', 8*sizeof(char));
     }
 
     //init ncurses
@@ -487,4 +495,16 @@ int readSave() {
 
     //done
     return 0;
+}
+
+block *getBlock(int y, int x) {
+    if (y < 0 || x < 0 || y >= blocks.x || x >= blocks.x) {
+        return &nullblock;
+    }
+    else if (map[y][x].generated == false) {
+        return &nullblock;
+    }
+    else {
+        return &map[y][x];
+    }
 }
