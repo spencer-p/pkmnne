@@ -213,10 +213,20 @@ void generateBlock(int by, int bx) {
     }
     //end block allocation
 
+	//Seed randomization with seed AND coordinates, so order doesn't matter
+	srand(seed*(by+1)*(bx+1));
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             if (map[by][bx].dat[y][x] == '\0') {
-                map[by][bx].dat[y][x] = '.';
+				int r = rand()%3;
+				switch (r) {
+					case 0:
+						map[by][bx].dat[y][x] = 'w';
+						break;
+					default:
+						map[by][bx].dat[y][x] = '.';
+						break;
+				}
             }
         }
     }
